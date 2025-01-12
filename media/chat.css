@@ -88,9 +88,30 @@ body {
 }
 
 .message-content table {
+    display: block;
+    overflow-x: auto;
     border-collapse: collapse;
     width: 100%;
     margin: 16px 0;
+    white-space: nowrap;
+}
+
+.message-content table::-webkit-scrollbar {
+    height: 8px;
+}
+
+.message-content table::-webkit-scrollbar-track {
+    background: var(--vscode-scrollbarSlider-background);
+    border-radius: 4px;
+}
+
+.message-content table::-webkit-scrollbar-thumb {
+    background: var(--vscode-scrollbarSlider-hoverBackground);
+    border-radius: 4px;
+}
+
+.message-content table::-webkit-scrollbar-thumb:hover {
+    background: var(--vscode-scrollbarSlider-activeBackground);
 }
 
 .message-content th,
@@ -98,10 +119,20 @@ body {
     border: 1px solid var(--vscode-panel-border);
     padding: 8px;
     text-align: left;
+    min-width: 100px; /* Prevent columns from becoming too narrow */
+    background: var(--vscode-editor-background);
 }
 
 .message-content th {
     background: var(--vscode-editor-inactiveSelectionBackground);
+    font-weight: bold;
+}
+
+.message-content td,
+.message-content th {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .message-content img {
