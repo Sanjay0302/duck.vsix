@@ -2,6 +2,23 @@ const vscode = require('vscode');
 const fetch = require('node-fetch');
 const path = require('path');
 const fs = require('fs');
+const showdown = require('showdown');
+
+// Initialize Showdown converter with all features
+const converter = new showdown.Converter({
+    tables: true,
+    simplifiedAutoLink: true,
+    strikethrough: true,
+    tasklists: true,
+    ghCodeBlocks: true,
+    emoji: true,
+    underline: true,
+    highlight: true,
+    footnotes: true,
+    parseImgDimensions: true,
+    simpleLineBreaks: true
+});
+converter.setFlavor('github');
 
 let currentPanel = undefined;
 
@@ -11,6 +28,7 @@ class DuckChatViewProvider {
         this._view = undefined;
         this.currentVqdToken = null;
         this.messages = [];
+        this.markdownConverter = converter;
     }
 
     resolveWebviewView(webviewView, context, token) {
@@ -85,21 +103,27 @@ class DuckChatViewProvider {
         }
     }
 
-    async sendChatMessage(message) {
-        if (!this.currentVqdToken) {
-            await this.initializeChatSession();
-            if (!this.currentVqdToken) {
-                this._view.webview.postMessage({
-                    command: 'receiveMessage',
-                    text: 'Failed to initialize chat session',
-                    isIncremental: false
-                });
-                return '';
-            }
-        }
-
+    async sendChatMessage(text) {
         try {
-            this.messages.push({ role: 'user', content: message });
+            // Add user message to the chat
+            this.messages.push({ role: 'user', content: text });
+            this._view.webview.postMessage({
+                command: 'receiveMessage',
+                text: this.markdownConverter.makeHtml(text),
+                isIncremental: false
+            });
+
+            if (!this.currentVqdToken) {
+                await this.initializeChatSession();
+                if (!this.currentVqdToken) {
+                    this._view.webview.postMessage({
+                        command: 'receiveMessage',
+                        text: 'Failed to initialize chat session',
+                        isIncremental: false
+                    });
+                    return '';
+                }
+            }
 
             const response = await fetch('https://duckduckgo.com/duckchat/v1/chat', {
                 method: 'POST',
@@ -156,7 +180,7 @@ class DuckChatViewProvider {
                                     if (now - lastUpdate >= 100 && this._view) {
                                         this._view.webview.postMessage({
                                             command: 'receiveMessage',
-                                            text: fullMessage,
+                                            text: this.markdownConverter.makeHtml(fullMessage),
                                             isIncremental: true
                                         });
                                         lastUpdate = now;
@@ -174,7 +198,7 @@ class DuckChatViewProvider {
                     if (this._view) {
                         this._view.webview.postMessage({
                             command: 'receiveMessage',
-                            text: fullMessage,
+                            text: this.markdownConverter.makeHtml(fullMessage),
                             isIncremental: true
                         });
                     }

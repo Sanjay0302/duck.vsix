@@ -6,9 +6,9 @@
 
 body {
     margin: 0;
-    padding: 0;
+    padding: 10px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     color: var(--vscode-foreground);
-    font-family: var(--vscode-font-family);
     font-size: var(--vscode-font-size);
     background-color: var(--vscode-editor-background);
 }
@@ -18,68 +18,116 @@ body {
     flex-direction: column;
     height: 100vh;
     max-width: 100%;
-    margin: 0;
+    margin: 0 auto;
     padding: 10px;
 }
 
 #messages {
-    flex-grow: 1;
+    flex: 1;
     overflow-y: auto;
-    margin-bottom: 10px;
     padding: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    margin-bottom: 10px;
 }
 
 .message {
+    margin-bottom: 16px;
     padding: 8px 12px;
     border-radius: 6px;
-    max-width: 85%;
-    word-wrap: break-word;
+    max-width: 100%;
 }
 
-.message h1, .message h2, .message h3 {
-    margin-top: 0.5em;
-    margin-bottom: 0.5em;
+.message-content {
+    line-height: 1.5;
+}
+
+.message-content h1,
+.message-content h2,
+.message-content h3,
+.message-content h4,
+.message-content h5,
+.message-content h6 {
+    margin-top: 16px;
+    margin-bottom: 8px;
     color: var(--vscode-foreground);
 }
 
-.message ul, .message ol {
-    margin: 0.5em 0;
-    padding-left: 1.5em;
+.message-content p {
+    margin: 8px 0;
 }
 
-.message p {
-    margin: 0.5em 0;
+.message-content pre {
+    background: var(--vscode-textCodeBlock-background);
+    padding: 12px;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 8px 0;
 }
 
-.message a {
+.message-content code {
+    font-family: var(--vscode-editor-font-family), monospace;
+    background: var(--vscode-textCodeBlock-background);
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.message-content blockquote {
+    border-left: 4px solid var(--vscode-textBlockQuote-border);
+    margin: 8px 0;
+    padding: 4px 12px;
+    background: var(--vscode-textBlockQuote-background);
+}
+
+.message-content ul,
+.message-content ol {
+    margin: 8px 0;
+    padding-left: 24px;
+}
+
+.message-content li {
+    margin: 4px 0;
+}
+
+.message-content table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 16px 0;
+}
+
+.message-content th,
+.message-content td {
+    border: 1px solid var(--vscode-panel-border);
+    padding: 8px;
+    text-align: left;
+}
+
+.message-content th {
+    background: var(--vscode-editor-inactiveSelectionBackground);
+}
+
+.message-content img {
+    max-width: 100%;
+    height: auto;
+    margin: 8px 0;
+}
+
+.message-content a {
     color: var(--vscode-textLink-foreground);
     text-decoration: none;
 }
 
-.message a:hover {
+.message-content a:hover {
     text-decoration: underline;
 }
 
-.message code {
-    font-family: var(--vscode-editor-font-family);
-    background-color: var(--vscode-textBlockQuote-background);
-    padding: 0.2em 0.4em;
-    border-radius: 3px;
-    font-size: 0.9em;
-}
-
 .user-message {
-    background-color: var(--vscode-button-background);
-    color: var(--vscode-button-foreground);
+    background: var(--vscode-textBlockQuote-background);
+    margin-left: 20%;
     align-self: flex-end;
 }
 
 .assistant-message {
-    background-color: var(--vscode-editor-inactiveSelectionBackground);
-    color: var(--vscode-editor-foreground);
+    background: var(--vscode-editor-inactiveSelectionBackground);
+    margin-right: 20%;
     align-self: flex-start;
 }
 
@@ -87,27 +135,25 @@ body {
     display: flex;
     gap: 8px;
     padding: 10px;
-    background-color: var(--vscode-editor-background);
-    border-top: 1px solid var(--vscode-widget-border);
+    background: var(--vscode-editor-background);
+    border-top: 1px solid var(--vscode-panel-border);
 }
 
 #message-input {
-    flex-grow: 1;
-    padding: var(--input-padding-y) var(--input-padding-x);
+    flex: 1;
+    padding: 8px;
     border: 1px solid var(--vscode-input-border);
-    background-color: var(--vscode-input-background);
+    background: var(--vscode-input-background);
     color: var(--vscode-input-foreground);
     border-radius: 4px;
-    outline: none;
-}
-
-#message-input:focus {
-    border-color: var(--vscode-focusBorder);
+    resize: none;
+    max-height: 200px;
+    min-height: 20px;
 }
 
 #send-button {
-    padding: var(--input-padding-y) 15px;
-    background-color: var(--vscode-button-background);
+    padding: 8px 16px;
+    background: var(--vscode-button-background);
     color: var(--vscode-button-foreground);
     border: none;
     border-radius: 4px;
@@ -115,15 +161,64 @@ body {
 }
 
 #send-button:hover {
-    background-color: var(--vscode-button-hoverBackground);
+    background: var(--vscode-button-hoverBackground);
+}
+
+/* Highlight.js theme overrides */
+.hljs {
+    background: transparent !important;
+    padding: 0 !important;
+}
+
+/* Task list styles */
+.message-content input[type="checkbox"] {
+    margin-right: 6px;
 }
 
 .code-block-container {
-    margin: 8px 0;
-    background-color: var(--vscode-editor-background);
-    border: 1px solid var(--vscode-widget-border);
+    position: relative;
+    margin: 1em 0;
+    background-color: var(--vscode-textCodeBlock-background);
     border-radius: 4px;
-    overflow: hidden;
+}
+
+.code-block-container pre {
+    margin: 0;
+    padding: 1em;
+    overflow-x: auto;
+}
+
+.code-block-container code {
+    font-family: var(--vscode-editor-font-family);
+    font-size: 0.9em;
+    white-space: pre;
+}
+
+.copy-button {
+    position: absolute;
+    top: 0.5em;
+    right: 0.5em;
+    padding: 0.3em 0.6em;
+    background-color: var(--vscode-button-secondaryBackground);
+    color: var(--vscode-button-secondaryForeground);
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.8em;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.code-block-container:hover .copy-button {
+    opacity: 1;
+}
+
+.copy-button:hover {
+    background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+.copy-button:active {
+    transform: translateY(1px);
 }
 
 .code-block-header {
@@ -159,19 +254,6 @@ body {
     background-color: var(--vscode-button-secondaryHoverBackground);
 }
 
-pre {
-    margin: 0;
-    padding: 12px;
-    overflow-x: auto;
-}
-
-pre code {
-    font-family: var(--vscode-editor-font-family);
-    font-size: var(--vscode-editor-font-size);
-    background: none;
-    padding: 0;
-}
-
 .code-button {
     user-select: none;
     cursor: pointer;
@@ -187,20 +269,3 @@ pre code {
 .code-button:active {
     transform: translateY(1px);
 }
-
-.code-button:hover {
-    background-color: var(--vscode-button-secondaryHoverBackground);
-}
-
-.latex-block {
-    margin: 1em 0;
-    overflow-x: auto;
-    text-align: center;
-}
-
-.latex-inline {
-    display: inline-block;
-    vertical-align: middle;
-    margin: 0 0.2em;
-}
-

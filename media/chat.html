@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,12 +7,11 @@
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
-
 <body>
     <div id="chat-container">
         <div id="messages"></div>
         <div id="input-container">
-            <input type="text" id="message-input" placeholder="Type a message...">
+            <textarea id="message-input" placeholder="Type a message..." rows="1"></textarea>
             <button id="send-button">Send</button>
         </div>
     </div>
@@ -24,132 +22,49 @@
         const sendButton = document.getElementById('send-button');
         let currentMessageDiv = null;
 
-        function createCodeBlock(code, language) {
-            const container = document.createElement('div');
-            container.className = 'code-block-container';
-
-            const header = document.createElement('div');
-            header.className = 'code-block-header';
-
-            const langLabel = document.createElement('span');
-            langLabel.className = 'language-label';
-            langLabel.textContent = language || 'plaintext';
-
-            const actions = document.createElement('div');
-            actions.className = 'code-actions';
-
-            const copyButton = document.createElement('button');
-            copyButton.className = 'code-button copy-button';
-            copyButton.textContent = 'Copy';
-            copyButton.onclick = async () => {
-                try {
-                    await navigator.clipboard.writeText(code);
-                    copyButton.textContent = 'Copied!';
-                    setTimeout(() => copyButton.textContent = 'Copy', 2000);
-                } catch (err) {
-                    console.error('Failed to copy:', err);
+        function addMessage(content, isUser) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = isUser ? 'message user-message' : 'message assistant-message';
+            
+            // Create message content container
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            
+            // Set the HTML content directly since it's already processed by Showdown
+            contentDiv.innerHTML = content;
+            
+            // Add syntax highlighting to code blocks
+            contentDiv.querySelectorAll('pre code').forEach((block) => {
+                if (window.hljs) {
+                    window.hljs.highlightElement(block);
                 }
-            };
-
-            const insertButton = document.createElement('button');
-            insertButton.className = 'code-button insert-button';
-            insertButton.textContent = 'Insert';
-            insertButton.onclick = () => {
-                vscode.postMessage({
-                    command: 'insertCode',
-                    code: code
-                });
-            };
-
-            actions.appendChild(copyButton);
-            actions.appendChild(insertButton);
-            header.appendChild(langLabel);
-            header.appendChild(actions);
-
-            const pre = document.createElement('pre');
-            const codeElement = document.createElement('code');
-            codeElement.textContent = code;
-            pre.appendChild(codeElement);
-
-            container.appendChild(header);
-            container.appendChild(pre);
-            return container;
-        }
-
-        function parseMarkdown(text) {
-            // LaTeX
-            text = text.replace(/\$\$([\s\S]*?)\$\$/g, (match, formula) => {
-                return `<div class="latex-block">${formula}</div>`;
             });
-
-            text = text.replace(/\$([^\$]*?)\$/g, (match, formula) => {
-                return `<span class="latex-inline">${formula}</span>`;
-            });
-
-            // Headers
-            text = text.replace(/^### (.*$)/gm, '<h3>$1</h3>');
-            text = text.replace(/^## (.*$)/gm, '<h2>$1</h2>');
-            text = text.replace(/^# (.*$)/gm, '<h1>$1</h1>');
-
-            // Lists
-            text = text.replace(/^\* (.*$)/gm, '<li>$1</li>');
-            text = text.replace(/^- (.*$)/gm, '<li>$1</li>');
-            text = text.replace(/^(\d+\. .*$)/gm, '<li>$1</li>');
-            text = text.replace(/(<li>.*<\/li>)\n/g, '<ul>$1</ul>');
-
-            // Bold and Italic
-            text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
-
-            // Links
-            text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
-
-            // Code blocks
-            text = text.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
-                const container = createCodeBlock(code.trim(), lang);
-                const temp = document.createElement('div');
-                temp.appendChild(container);
-                return temp.innerHTML;
-            });
-
-            // Inline code
-            text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-            // Paragraphs
-            text = text.replace(/\n\n/g, '</p><p>');
-            text = '<p>' + text + '</p>';
-
-            return text;
-        }
-
-        function addMessage(text, isUser, isIncremental = false) {
-            if (isUser || !isIncremental || !currentMessageDiv) {
-                currentMessageDiv = document.createElement('div');
-                currentMessageDiv.className = `message ${isUser ? 'user-message' : 'assistant-message'}`;
-                messagesDiv.appendChild(currentMessageDiv);
-            }
-
-            currentMessageDiv.innerHTML = parseMarkdown(text);
+            
+            messageDiv.appendChild(contentDiv);
+            messagesDiv.appendChild(messageDiv);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-            // Render LaTeX after adding content
-            if (window.MathJax) {
-                MathJax.typesetPromise([currentMessageDiv]);
-            }
+            return messageDiv;
         }
 
         function sendMessage() {
             const text = messageInput.value.trim();
             if (text) {
-                addMessage(text, true);
-                currentMessageDiv = null; // Reset for next response
                 vscode.postMessage({
                     command: 'sendMessage',
                     text: text
                 });
                 messageInput.value = '';
+                adjustTextareaHeight();
             }
         }
+
+        // Auto-resize textarea
+        function adjustTextareaHeight() {
+            messageInput.style.height = 'auto';
+            messageInput.style.height = messageInput.scrollHeight + 'px';
+        }
+
+        messageInput.addEventListener('input', adjustTextareaHeight);
 
         messageInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -164,11 +79,18 @@
             const message = event.data;
             switch (message.command) {
                 case 'receiveMessage':
-                    addMessage(message.text, false, message.isIncremental);
+                    if (message.isIncremental && currentMessageDiv) {
+                        const contentDiv = currentMessageDiv.querySelector('.message-content');
+                        contentDiv.innerHTML = message.text;
+                    } else {
+                        currentMessageDiv = addMessage(message.text, false);
+                    }
                     break;
             }
         });
+
+        // Initialize textarea height
+        adjustTextareaHeight();
     </script>
 </body>
-
 </html>
