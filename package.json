@@ -49,6 +49,7 @@
     "test": "vscode-test"
   },
   "dependencies": {
+    "katex": "^0.16.19",
     "node-fetch": "^2.6.1",
     "showdown": "^2.1.0"
   },

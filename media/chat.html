@@ -22,22 +22,70 @@
         const sendButton = document.getElementById('send-button');
         let currentMessageDiv = null;
 
+        function createCodeBlock(code, language) {
+            const container = document.createElement('div');
+            container.className = 'code-block-container';
+
+            const actions = document.createElement('div');
+            actions.className = 'code-actions';
+
+            const copyButton = document.createElement('button');
+            copyButton.className = 'code-button';
+            copyButton.textContent = 'Copy';
+            copyButton.onclick = async () => {
+                try {
+                    await navigator.clipboard.writeText(code);
+                    copyButton.textContent = 'Copied!';
+                    setTimeout(() => {
+                        copyButton.textContent = 'Copy';
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy:', err);
+                }
+            };
+
+            const insertButton = document.createElement('button');
+            insertButton.className = 'code-button';
+            insertButton.textContent = 'Insert';
+            insertButton.onclick = () => {
+                vscode.postMessage({
+                    command: 'insertCode',
+                    code: code
+                });
+            };
+
+            actions.appendChild(copyButton);
+            actions.appendChild(insertButton);
+            container.appendChild(actions);
+
+            const pre = document.createElement('pre');
+            const codeElement = document.createElement('code');
+            if (language) {
+                codeElement.className = `language-${language}`;
+            }
+            codeElement.textContent = code;
+            pre.appendChild(codeElement);
+            container.appendChild(pre);
+
+            return container;
+        }
+
         function addMessage(content, isUser) {
             const messageDiv = document.createElement('div');
             messageDiv.className = isUser ? 'message user-message' : 'message assistant-message';
             
-            // Create message content container
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
             
-            // Set the HTML content directly since it's already processed by Showdown
+            // First set the content
             contentDiv.innerHTML = content;
             
-            // Add syntax highlighting to code blocks
+            // Then replace code blocks with our custom ones
             contentDiv.querySelectorAll('pre code').forEach((block) => {
-                if (window.hljs) {
-                    window.hljs.highlightElement(block);
-                }
+                const code = block.textContent;
+                const language = block.className.replace('language-', '');
+                const codeBlockContainer = createCodeBlock(code, language);
+                block.parentElement.replaceWith(codeBlockContainer);
             });
             
             messageDiv.appendChild(contentDiv);
@@ -58,7 +106,6 @@
             }
         }
 
-        // Auto-resize textarea
         function adjustTextareaHeight() {
             messageInput.style.height = 'auto';
             messageInput.style.height = messageInput.scrollHeight + 'px';
@@ -82,6 +129,13 @@
                     if (message.isIncremental && currentMessageDiv) {
                         const contentDiv = currentMessageDiv.querySelector('.message-content');
                         contentDiv.innerHTML = message.text;
+                        // Re-process code blocks after updating content
+                        contentDiv.querySelectorAll('pre code').forEach((block) => {
+                            const code = block.textContent;
+                            const language = block.className.replace('language-', '');
+                            const codeBlockContainer = createCodeBlock(code, language);
+                            block.parentElement.replaceWith(codeBlockContainer);
+                        });
                     } else {
                         currentMessageDiv = addMessage(message.text, false);
                     }
@@ -89,7 +143,6 @@
             }
         });
 
-        // Initialize textarea height
         adjustTextareaHeight();
     </script>
 </body>
