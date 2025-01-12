@@ -6,6 +6,18 @@
     <link rel="stylesheet" href="${cssUri}">
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['\\(', '\\)']],
+                displayMath: [['\\[', '\\]']],
+                processEscapes: true
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+            }
+        };
+    </script>
 </head>
 <body>
     <div id="chat-container">
@@ -79,6 +91,11 @@
             
             // First set the content
             contentDiv.innerHTML = content;
+            
+            // Trigger MathJax to process the new content
+            if (window.MathJax) {
+                window.MathJax.typesetPromise([contentDiv]).catch((err) => console.error('MathJax error:', err));
+            }
             
             // Then replace code blocks with our custom ones
             contentDiv.querySelectorAll('pre code').forEach((block) => {

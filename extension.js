@@ -16,8 +16,28 @@ const converter = new showdown.Converter({
     highlight: true,
     footnotes: true,
     parseImgDimensions: true,
-    simpleLineBreaks: true
+    simpleLineBreaks: false,
+    literalMidWordUnderscores: true,
+    literalMidWordAsterisks: true,
+    backslashEscapesHTMLTags: true
 });
+
+// Add custom regex extension for math expressions
+converter.addExtension({
+    type: 'lang',
+    filter: function(text) {
+        // Preserve inline math
+        text = text.replace(/\\\((.*?)\\\)/g, function(match, p1) {
+            return '\\\\(' + p1 + '\\\\)';
+        });
+        // Preserve display math
+        text = text.replace(/\\\[(.*?)\\\]/g, function(match, p1) {
+            return '\\\\[' + p1 + '\\\\]';
+        });
+        return text;
+    }
+});
+
 converter.setFlavor('github');
 
 let currentPanel = undefined;
