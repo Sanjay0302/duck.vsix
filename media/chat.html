@@ -1,10 +1,14 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="${cssUri}">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
+
 <body>
     <div id="chat-container">
         <div id="messages"></div>
@@ -23,71 +27,83 @@
         function createCodeBlock(code, language) {
             const container = document.createElement('div');
             container.className = 'code-block-container';
-            
+
             const header = document.createElement('div');
             header.className = 'code-block-header';
-            
+
             const langLabel = document.createElement('span');
             langLabel.className = 'language-label';
             langLabel.textContent = language || 'plaintext';
-            
+
             const actions = document.createElement('div');
             actions.className = 'code-actions';
-            
+
             const copyButton = document.createElement('button');
-            copyButton.className = 'code-button';
+            copyButton.className = 'code-button copy-button';
             copyButton.textContent = 'Copy';
-            copyButton.addEventListener('click', () => {
-                navigator.clipboard.writeText(code).then(() => {
+            copyButton.onclick = async () => {
+                try {
+                    await navigator.clipboard.writeText(code);
                     copyButton.textContent = 'Copied!';
                     setTimeout(() => copyButton.textContent = 'Copy', 2000);
-                }).catch(err => console.error('Failed to copy:', err));
-            });
-            
+                } catch (err) {
+                    console.error('Failed to copy:', err);
+                }
+            };
+
             const insertButton = document.createElement('button');
-            insertButton.className = 'code-button';
+            insertButton.className = 'code-button insert-button';
             insertButton.textContent = 'Insert';
-            insertButton.addEventListener('click', () => {
+            insertButton.onclick = () => {
                 vscode.postMessage({
                     command: 'insertCode',
                     code: code
                 });
-            });
-            
+            };
+
             actions.appendChild(copyButton);
             actions.appendChild(insertButton);
             header.appendChild(langLabel);
             header.appendChild(actions);
-            
+
             const pre = document.createElement('pre');
             const codeElement = document.createElement('code');
             codeElement.textContent = code;
             pre.appendChild(codeElement);
-            
+
             container.appendChild(header);
             container.appendChild(pre);
             return container;
         }
 
         function parseMarkdown(text) {
+            // LaTeX
+            text = text.replace(/\$\$([\s\S]*?)\$\$/g, (match, formula) => {
+                return `<div class="latex-block">${formula}</div>`;
+            });
+
+            text = text.replace(/\$([^\$]*?)\$/g, (match, formula) => {
+                return `<span class="latex-inline">${formula}</span>`;
+            });
+
             // Headers
             text = text.replace(/^### (.*$)/gm, '<h3>$1</h3>');
             text = text.replace(/^## (.*$)/gm, '<h2>$1</h2>');
             text = text.replace(/^# (.*$)/gm, '<h1>$1</h1>');
-            
+
             // Lists
             text = text.replace(/^\* (.*$)/gm, '<li>$1</li>');
             text = text.replace(/^- (.*$)/gm, '<li>$1</li>');
             text = text.replace(/^(\d+\. .*$)/gm, '<li>$1</li>');
             text = text.replace(/(<li>.*<\/li>)\n/g, '<ul>$1</ul>');
-            
+
             // Bold and Italic
             text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
             text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
-            
+
             // Links
             text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
-            
+
             // Code blocks
             text = text.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
                 const container = createCodeBlock(code.trim(), lang);
@@ -95,14 +111,14 @@
                 temp.appendChild(container);
                 return temp.innerHTML;
             });
-            
+
             // Inline code
             text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
-            
+
             // Paragraphs
             text = text.replace(/\n\n/g, '</p><p>');
             text = '<p>' + text + '</p>';
-            
+
             return text;
         }
 
@@ -112,9 +128,14 @@
                 currentMessageDiv.className = `message ${isUser ? 'user-message' : 'assistant-message'}`;
                 messagesDiv.appendChild(currentMessageDiv);
             }
-            
+
             currentMessageDiv.innerHTML = parseMarkdown(text);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+            // Render LaTeX after adding content
+            if (window.MathJax) {
+                MathJax.typesetPromise([currentMessageDiv]);
+            }
         }
 
         function sendMessage() {
@@ -149,4 +170,5 @@
         });
     </script>
 </body>
+
 </html>

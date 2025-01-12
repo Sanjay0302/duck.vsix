@@ -1,3 +1,4 @@
+/* chat.css */
 :root {
     --input-padding-x: 10px;
     --input-padding-y: 8px;
@@ -170,3 +171,36 @@ pre code {
     background: none;
     padding: 0;
 }
+
+.code-button {
+    user-select: none;
+    cursor: pointer;
+    padding: 2px 8px;
+    font-size: 0.9em;
+    background-color: var(--vscode-button-secondaryBackground);
+    color: var(--vscode-button-secondaryForeground);
+    border: none;
+    border-radius: 3px;
+    margin-left: 4px;
+}
+
+.code-button:active {
+    transform: translateY(1px);
+}
+
+.code-button:hover {
+    background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+.latex-block {
+    margin: 1em 0;
+    overflow-x: auto;
+    text-align: center;
+}
+
+.latex-inline {
+    display: inline-block;
+    vertical-align: middle;
+    margin: 0 0.2em;
+}
+

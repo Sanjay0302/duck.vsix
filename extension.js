@@ -1,5 +1,3 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 const vscode = require('vscode');
 const fetch = require('node-fetch');
 const path = require('path');
@@ -29,7 +27,6 @@ class DuckChatViewProvider {
             vscode.Uri.file(path.join(this.context.extensionPath, 'media', 'chat.css'))
         );
 
-        // Read and process the HTML template
         const htmlPath = path.join(this.context.extensionPath, 'media', 'chat.html');
         let htmlContent = fs.readFileSync(htmlPath, 'utf8');
         htmlContent = htmlContent.replace('${cssUri}', cssUri);
@@ -39,8 +36,7 @@ class DuckChatViewProvider {
         webviewView.webview.onDidReceiveMessage(async message => {
             switch (message.command) {
                 case 'sendMessage':
-                    const response = await this.sendChatMessage(message.text);
-                    webviewView.webview.postMessage({ command: 'receiveMessage', text: response });
+                    await this.sendChatMessage(message.text);
                     break;
                 case 'insertCode':
                     const editor = vscode.window.activeTextEditor;
@@ -53,7 +49,6 @@ class DuckChatViewProvider {
             }
         });
 
-        // Initialize the chat session
         this.initializeChatSession();
     }
 
@@ -94,12 +89,16 @@ class DuckChatViewProvider {
         if (!this.currentVqdToken) {
             await this.initializeChatSession();
             if (!this.currentVqdToken) {
-                return 'Failed to initialize chat session';
+                this._view.webview.postMessage({
+                    command: 'receiveMessage',
+                    text: 'Failed to initialize chat session',
+                    isIncremental: false
+                });
+                return '';
             }
         }
 
         try {
-            // Add the new message to the conversation history
             this.messages.push({ role: 'user', content: message });
 
             const response = await fetch('https://duckduckgo.com/duckchat/v1/chat', {
@@ -118,10 +117,14 @@ class DuckChatViewProvider {
 
             if (!response.ok) {
                 console.error('API Response Error:', response.status, response.statusText);
-                return `Error: ${response.status} ${response.statusText}`;
+                this._view.webview.postMessage({
+                    command: 'receiveMessage',
+                    text: `Error: ${response.status} ${response.statusText}`,
+                    isIncremental: false
+                });
+                return '';
             }
 
-            // Get the new VQD token from the response
             const newVqdToken = response.headers.get('x-vqd-4');
             if (newVqdToken) {
                 this.currentVqdToken = newVqdToken;
@@ -136,7 +139,7 @@ class DuckChatViewProvider {
                 response.body.on('data', chunk => {
                     buffer += chunk.toString();
                     const lines = buffer.split('\n');
-                    buffer = lines.pop(); // Keep the last partial line in the buffer
+                    buffer = lines.pop();
 
                     for (const line of lines) {
                         if (line.startsWith('data: ')) {
@@ -149,13 +152,12 @@ class DuckChatViewProvider {
                                 const jsonData = JSON.parse(data);
                                 if (jsonData.message) {
                                     fullMessage += jsonData.message;
-                                    // Only update if 100ms has passed since last update
                                     const now = Date.now();
                                     if (now - lastUpdate >= 100 && this._view) {
-                                        this._view.webview.postMessage({ 
-                                            command: 'receiveMessage', 
+                                        this._view.webview.postMessage({
+                                            command: 'receiveMessage',
                                             text: fullMessage,
-                                            isIncremental: true 
+                                            isIncremental: true
                                         });
                                         lastUpdate = now;
                                     }
@@ -169,12 +171,11 @@ class DuckChatViewProvider {
                 });
 
                 response.body.on('end', () => {
-                    // Send final update regardless of time passed
                     if (this._view) {
-                        this._view.webview.postMessage({ 
-                            command: 'receiveMessage', 
+                        this._view.webview.postMessage({
+                            command: 'receiveMessage',
                             text: fullMessage,
-                            isIncremental: true 
+                            isIncremental: true
                         });
                     }
                     resolve();
@@ -186,20 +187,20 @@ class DuckChatViewProvider {
                 });
             });
 
-            // Add the assistant's response to the conversation history
             if (fullMessage) {
                 this.messages.push({ role: 'assistant', content: fullMessage });
             }
 
-            return fullMessage || 'No response received';
+            return '';
         } catch (error) {
             console.error('Error sending message:', error);
-            return 'Error: ' + error.message;
+            this._view.webview.postMessage({
+                command: 'receiveMessage',
+                text: 'Error: ' + error.message,
+                isIncremental: false
+            });
+            return '';
         }
-    }
-
-    _getHtmlContent() {
-        // This method is no longer needed
     }
 }
 
@@ -207,7 +208,7 @@ function activate(context) {
     console.log('Duck Chat extension is now active!');
 
     const provider = new DuckChatViewProvider(context);
-    
+
     context.subscriptions.push(
         vscode.window.registerWebviewViewProvider('duckChatView', provider)
     );
@@ -219,7 +220,7 @@ function activate(context) {
     context.subscriptions.push(startChatCommand);
 }
 
-function deactivate() {}
+function deactivate() { }
 
 module.exports = {
     activate,
