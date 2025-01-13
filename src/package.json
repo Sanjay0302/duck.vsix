@@ -10,7 +10,6 @@
     "Other"
   ],
   "activationEvents": [
-    "onView:duckChatView"
   ],
   "main": "./extension.js",
   "contributes": {
@@ -49,14 +48,18 @@
     "test": "vscode-test"
   },
   "dependencies": {
-    "katex": "^0.16.19",
-    "node-fetch": "^2.6.1",
+    "@vscode/webview-ui-toolkit": "^1.2.2",
+    "marked": "^11.1.1",
+    "katex": "^0.16.9",
+    "node-fetch": "^2.6.7",
     "showdown": "^2.1.0"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
     "@types/vscode": "^1.96.0",
+    "@types/marked": "^5.0.2",
+    "@types/katex": "^0.16.7",
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.4.1",
     "eslint": "^9.16.0"

@@ -2,43 +2,86 @@ const vscode = require('vscode');
 const fetch = require('node-fetch');
 const path = require('path');
 const fs = require('fs');
-const showdown = require('showdown');
+const { marked } = require('marked');
+const katex = require('katex');
 
-// Initialize Showdown converter with all features
-const converter = new showdown.Converter({
-    tables: true,
-    simplifiedAutoLink: true,
-    strikethrough: true,
-    tasklists: true,
-    ghCodeBlocks: true,
-    emoji: true,
-    underline: true,
-    highlight: true,
-    footnotes: true,
-    parseImgDimensions: true,
-    simpleLineBreaks: false,
-    literalMidWordUnderscores: true,
-    literalMidWordAsterisks: true,
-    backslashEscapesHTMLTags: true
-});
+// Custom tokenizer for math expressions
+const mathTokenizer = {
+    name: 'math',
+    level: 'inline',
+    start(src) { 
+        return src.match(/\$|\\\(|\\\[/)?.index;
+    },
+    tokenizer(src) {
+        // Display Math ($$...$$)
+        const displayMatch = src.match(/^\$\$([\s\S]+?)\$\$/);
+        if (displayMatch) {
+            return {
+                type: 'math',
+                raw: displayMatch[0],
+                text: displayMatch[1],
+                display: true
+            };
+        }
 
-// Add custom regex extension for math expressions
-converter.addExtension({
-    type: 'lang',
-    filter: function(text) {
-        // Preserve inline math
-        text = text.replace(/\\\((.*?)\\\)/g, function(match, p1) {
-            return '\\\\(' + p1 + '\\\\)';
-        });
-        // Preserve display math
-        text = text.replace(/\\\[(.*?)\\\]/g, function(match, p1) {
-            return '\\\\[' + p1 + '\\\\]';
-        });
-        return text;
+        // Display Math (\[...\])
+        const displayMatch2 = src.match(/^\\\[([\s\S]+?)\\\]/);
+        if (displayMatch2) {
+            return {
+                type: 'math',
+                raw: displayMatch2[0],
+                text: displayMatch2[1],
+                display: true
+            };
+        }
+
+        // Inline Math ($...$)
+        const inlineMatch = src.match(/^\$([^\$]+?)\$/);
+        if (inlineMatch) {
+            return {
+                type: 'math',
+                raw: inlineMatch[0],
+                text: inlineMatch[1],
+                display: false
+            };
+        }
+
+        // Inline Math (\(...\))
+        const inlineMatch2 = src.match(/^\\\(([\s\S]+?)\\\)/);
+        if (inlineMatch2) {
+            return {
+                type: 'math',
+                raw: inlineMatch2[0],
+                text: inlineMatch2[1],
+                display: false
+            };
+        }
+
+        return false;
+    },
+    renderer(token) {
+        try {
+            return katex.renderToString(token.text, {
+                displayMode: token.display,
+                throwOnError: false
+            });
+        } catch (err) {
+            console.error('KaTeX error:', err);
+            return token.raw;
+        }
+    }
+};
+
+// Configure marked with custom tokenizer and renderer
+marked.use({ extensions: [mathTokenizer] });
+
+marked.setOptions({
+    gfm: true,
+    breaks: true,
+    highlight: function(code, lang) {
+        return code;
     }
 });
-
-converter.setFlavor('github');
 
 let currentPanel = undefined;
 
@@ -48,7 +91,7 @@ class DuckChatViewProvider {
         this._view = undefined;
         this.currentVqdToken = null;
         this.messages = [];
-        this.markdownConverter = converter;
+        this.markdownConverter = marked;
     }
 
     resolveWebviewView(webviewView, context, token) {
@@ -129,7 +172,7 @@ class DuckChatViewProvider {
             this.messages.push({ role: 'user', content: text });
             this._view.webview.postMessage({
                 command: 'receiveMessage',
-                text: this.markdownConverter.makeHtml(text),
+                text: this.markdownConverter(text),
                 isIncremental: false
             });
 
@@ -200,7 +243,7 @@ class DuckChatViewProvider {
                                     if (now - lastUpdate >= 100 && this._view) {
                                         this._view.webview.postMessage({
                                             command: 'receiveMessage',
-                                            text: this.markdownConverter.makeHtml(fullMessage),
+                                            text: this.markdownConverter(fullMessage),
                                             isIncremental: true
                                         });
                                         lastUpdate = now;
@@ -218,7 +261,7 @@ class DuckChatViewProvider {
                     if (this._view) {
                         this._view.webview.postMessage({
                             command: 'receiveMessage',
-                            text: this.markdownConverter.makeHtml(fullMessage),
+                            text: this.markdownConverter(fullMessage),
                             isIncremental: true
                         });
                     }

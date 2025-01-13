@@ -4,19 +4,41 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="${cssUri}">
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <style>
+        /* Add some basic styling for math display */
+        .katex-display {
+            margin: 1em 0;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 0.5em 0;
+        }
+        .katex {
+            font-size: 1.1em;
+            font-family: KaTeX_Main, 'Times New Roman', serif;
+        }
+        .katex-html {
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
     <script>
-        window.MathJax = {
-            tex: {
-                inlineMath: [['\\(', '\\)']],
-                displayMath: [['\\[', '\\]']],
-                processEscapes: true
-            },
-            options: {
-                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
-            }
-        };
+        document.addEventListener("DOMContentLoaded", function () {
+            renderMathInElement(document.body, {
+                // customised options
+                // • auto-render specific keys, e.g.:
+                delimiters: [
+                    {left: "$$", right: "$$", display: true},
+                    {left: "$", right: "$", display: false},
+                    {left: "\\(", right: "\\)", display: false},
+                    {left: "\\[", right: "\\]", display: true}
+                ],
+                // • rendering keys, e.g.:
+                throwOnError : false
+            });
+        });
     </script>
 </head>
 <body>
@@ -91,11 +113,6 @@
             
             // First set the content
             contentDiv.innerHTML = content;
-            
-            // Trigger MathJax to process the new content
-            if (window.MathJax) {
-                window.MathJax.typesetPromise([contentDiv]).catch((err) => console.error('MathJax error:', err));
-            }
             
             // Then replace code blocks with our custom ones
             contentDiv.querySelectorAll('pre code').forEach((block) => {
