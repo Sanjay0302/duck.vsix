@@ -30,7 +30,8 @@ body {
     flex: 1;
     overflow-y: auto;
     padding: 10px;
-    margin-bottom: 60px; /* Height of input container */
+    padding-bottom: 140px; /* Increased padding to prevent overlap with input container */
+    margin-bottom: 0; /* Removed margin-bottom */
 }
 
 .message {
@@ -167,41 +168,55 @@ body {
 }
 
 #input-container {
-    display: flex;
-    gap: 8px;
-    padding: 10px;
-    background: var(--vscode-editor-background);
-    border-top: 1px solid var(--vscode-panel-border);
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    height: 40px;
+    padding: 10px;
+    background-color: var(--vscode-editor-background);
+    border-top: 1px solid var(--vscode-panel-border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 100; /* Ensure input container stays on top */
+}
+
+.input-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
 }
 
 #message-input {
     flex: 1;
-    padding: 8px;
+    padding: var(--input-padding-y) var(--input-padding-x);
     border: 1px solid var(--vscode-input-border);
-    background: var(--vscode-input-background);
+    background-color: var(--vscode-input-background);
     color: var(--vscode-input-foreground);
     border-radius: 4px;
     resize: none;
-    max-height: 200px;
-    min-height: 20px;
+    outline: none;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: 1.4;
+    min-height: 38px;
+    max-height: 150px;
+}
+
+#message-input:focus {
+    border-color: var(--vscode-focusBorder);
 }
 
 #send-button {
     padding: 8px 16px;
+    height: 38px;
     background: var(--vscode-button-background);
     color: var(--vscode-button-foreground);
     border: none;
     border-radius: 4px;
     cursor: pointer;
-}
-
-#send-button:hover {
-    background: var(--vscode-button-hoverBackground);
+    font-size: inherit;
+    white-space: nowrap;
 }
 
 /* Highlight.js theme overrides */
@@ -301,3 +316,24 @@ body {
 .codicon-copy:before { content: "\\ea77"; }
 .codicon-check:before { content: "\\eab2"; }
 .codicon-insert:before { content: "\\eb62"; }
+
+.model-selector {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 8px;
+    border: 1px solid var(--vscode-input-border);
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border-radius: 4px;
+    outline: none;
+    font-size: 14px;
+}
+
+.model-selector:focus {
+    border-color: var(--vscode-focusBorder);
+}
+
+.model-selector option {
+    background-color: var(--vscode-dropdown-background);
+    color: var(--vscode-dropdown-foreground);
+}

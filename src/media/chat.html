@@ -45,8 +45,16 @@
     <div id="chat-container">
         <div id="messages"></div>
         <div id="input-container">
-            <textarea id="message-input" placeholder="Type a message..." rows="1"></textarea>
-            <button id="send-button">Send</button>
+            <select id="model-selector" class="model-selector">
+                <option value="gpt-4o-mini">GPT-4O Mini</option>
+                <option value="claude-3-haiku-20240307">Claude-3 Haiku</option>
+                <option value="meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo">Llama-3.1</option>
+                <option value="mistralai/Mixtral-8x7B-Instruct-v0.1">Mixtral-8x7B</option>
+            </select>
+            <div class="input-row">
+                <textarea id="message-input" placeholder="Type a message..." rows="1"></textarea>
+                <button id="send-button">Send</button>
+            </div>
         </div>
     </div>
     <script>
@@ -54,7 +62,20 @@
         const messagesDiv = document.getElementById('messages');
         const messageInput = document.getElementById('message-input');
         const sendButton = document.getElementById('send-button');
+        const modelSelector = document.getElementById('model-selector');
         let currentMessageDiv = null;
+        let currentModel = modelSelector.value;
+
+        modelSelector.addEventListener('change', () => {
+            currentModel = modelSelector.value;
+            // Clear messages when model changes
+            messagesDiv.innerHTML = '';
+            // Notify extension about model change
+            vscode.postMessage({
+                command: 'modelChanged',
+                model: currentModel
+            });
+        });
 
         function createCodeBlock(code, language) {
             const container = document.createElement('div');
@@ -133,7 +154,8 @@
             if (text) {
                 vscode.postMessage({
                     command: 'sendMessage',
-                    text: text
+                    text: text,
+                    model: currentModel
                 });
                 messageInput.value = '';
                 adjustTextareaHeight();

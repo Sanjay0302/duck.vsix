@@ -92,6 +92,7 @@ class DuckChatViewProvider {
         this.currentVqdToken = null;
         this.messages = [];
         this.markdownConverter = marked;
+        this.currentModel = 'gpt-4o-mini';
     }
 
     resolveWebviewView(webviewView, context, token) {
@@ -117,7 +118,12 @@ class DuckChatViewProvider {
         webviewView.webview.onDidReceiveMessage(async message => {
             switch (message.command) {
                 case 'sendMessage':
-                    await this.sendChatMessage(message.text);
+                    await this.sendChatMessage(message.text, message.model);
+                    break;
+                case 'modelChanged':
+                    this.currentModel = message.model;
+                    this.messages = [];
+                    await this.initializeChatSession();
                     break;
                 case 'insertCode':
                     const editor = vscode.window.activeTextEditor;
@@ -166,7 +172,7 @@ class DuckChatViewProvider {
         }
     }
 
-    async sendChatMessage(text) {
+    async sendChatMessage(text, model) {
         try {
             // Add user message to the chat
             this.messages.push({ role: 'user', content: text });
@@ -197,7 +203,7 @@ class DuckChatViewProvider {
                     'x-vqd-4': this.currentVqdToken
                 },
                 body: JSON.stringify({
-                    model: 'gpt-4o-mini',
+                    model: model || this.currentModel,
                     messages: this.messages
                 })
             });
