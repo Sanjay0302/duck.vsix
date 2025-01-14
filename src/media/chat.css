@@ -30,7 +30,7 @@ body {
     flex: 1;
     overflow-y: auto;
     padding: 10px;
-    padding-bottom: 140px; /* Increased padding to prevent overlap with input container */
+    padding-bottom: 60px;
     margin-bottom: 0; /* Removed margin-bottom */
 }
 
@@ -175,48 +175,68 @@ body {
     padding: 10px;
     background-color: var(--vscode-editor-background);
     border-top: 1px solid var(--vscode-panel-border);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    z-index: 100; /* Ensure input container stays on top */
+    z-index: 100;
 }
 
 .input-row {
     display: flex;
-    gap: 8px;
-    align-items: flex-start;
+    gap: 6px;
+    align-items: center;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 6px;
+    border-radius: 3px;
+    background-color: var(--vscode-input-background);
+}
+
+.model-selector {
+    width: 100px;
+    padding: 4px 8px;
+    border: 1px solid var(--vscode-dropdown-border, rgba(204, 204, 204, 0.2));
+    background-color: var(--vscode-dropdown-background);
+    color: var(--vscode-dropdown-foreground);
+    border-radius: 3px;
+    outline: none;
+    font-size: 12px;
+    cursor: pointer;
 }
 
 #message-input {
     flex: 1;
-    padding: var(--input-padding-y) var(--input-padding-x);
-    border: 1px solid var(--vscode-input-border);
-    background-color: var(--vscode-input-background);
+    padding: 4px 8px;
+    background-color: transparent;
+    border: 1px solid var(--vscode-input-border, rgba(204, 204, 204, 0.2));
     color: var(--vscode-input-foreground);
-    border-radius: 4px;
+    border-radius: 3px;
     resize: none;
     outline: none;
     font-family: inherit;
-    font-size: inherit;
+    font-size: 12px;
     line-height: 1.4;
-    min-height: 38px;
-    max-height: 150px;
+    height: 24px;
+    min-height: 24px;
 }
 
-#message-input:focus {
-    border-color: var(--vscode-focusBorder);
+#message-input::placeholder {
+    color: var(--vscode-input-placeholderForeground);
+    opacity: 0.7;
 }
 
 #send-button {
-    padding: 8px 16px;
-    height: 38px;
-    background: var(--vscode-button-background);
+    padding: 4px 12px;
+    height: 24px;
+    background-color: rgb(147, 147, 96);
     color: var(--vscode-button-foreground);
     border: none;
-    border-radius: 4px;
+    border-radius: 3px;
     cursor: pointer;
-    font-size: inherit;
+    font-size: 12px;
     white-space: nowrap;
+    transition: background-color 0.2s;
+}
+
+#send-button:hover {
+    background-color: rgb(162, 162, 106);
 }
 
 /* Highlight.js theme overrides */
@@ -316,24 +336,3 @@ body {
 .codicon-copy:before { content: "\\ea77"; }
 .codicon-check:before { content: "\\eab2"; }
 .codicon-insert:before { content: "\\eb62"; }
-
-.model-selector {
-    width: 100%;
-    padding: 8px;
-    margin-bottom: 8px;
-    border: 1px solid var(--vscode-input-border);
-    background-color: var(--vscode-input-background);
-    color: var(--vscode-input-foreground);
-    border-radius: 4px;
-    outline: none;
-    font-size: 14px;
-}
-
-.model-selector:focus {
-    border-color: var(--vscode-focusBorder);
-}
-
-.model-selector option {
-    background-color: var(--vscode-dropdown-background);
-    color: var(--vscode-dropdown-foreground);
-}

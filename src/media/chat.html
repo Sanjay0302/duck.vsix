@@ -45,14 +45,14 @@
     <div id="chat-container">
         <div id="messages"></div>
         <div id="input-container">
-            <select id="model-selector" class="model-selector">
-                <option value="gpt-4o-mini">GPT-4O Mini</option>
-                <option value="claude-3-haiku-20240307">Claude-3 Haiku</option>
-                <option value="meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo">Llama-3.1</option>
-                <option value="mistralai/Mixtral-8x7B-Instruct-v0.1">Mixtral-8x7B</option>
-            </select>
             <div class="input-row">
-                <textarea id="message-input" placeholder="Type a message..." rows="1"></textarea>
+                <select id="model-selector" class="model-selector">
+                    <option value="gpt-4o-mini">GPT-4O Mini</option>
+                    <option value="claude-3-haiku-20240307">Claude-3 Haiku</option>
+                    <option value="meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo">Llama-3.1</option>
+                    <option value="mistralai/Mixtral-8x7B-Instruct-v0.1">Mixtral-8x7B</option>
+                </select>
+                <input type="text" id="message-input" placeholder="Ask duck.ai">
                 <button id="send-button">Send</button>
             </div>
         </div>
