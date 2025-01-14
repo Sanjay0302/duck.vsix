@@ -77,13 +77,8 @@ marked.use({ extensions: [mathTokenizer] });
 
 marked.setOptions({
     gfm: true,
-    breaks: true,
-    highlight: function(code, lang) {
-        return code;
-    }
+    breaks: true
 });
-
-let currentPanel = undefined;
 
 class DuckChatViewProvider {
     constructor(context) {
@@ -95,7 +90,7 @@ class DuckChatViewProvider {
         this.currentModel = 'gpt-4o-mini';
     }
 
-    resolveWebviewView(webviewView, context, token) {
+    resolveWebviewView(webviewView) {
         this._view = webviewView;
 
         webviewView.webview.options = {
