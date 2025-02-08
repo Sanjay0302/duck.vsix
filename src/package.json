@@ -1,13 +1,21 @@
 {
-  "name": "duck-vsx",
-  "displayName": "duck.vsx",
-  "description": "DuckDuckGo AI Chat Extension",
-  "version": "0.0.1",
+  "name": "duckai",
+  "displayName": "duck.ai",
+  "description": "DuckDuckGo AI Chat in VS Code",
+  "icon": "media/icons/duckduckgo.256.255.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Sanjay0302/duck.vsix/"
+  },
+  "version": "1.0.0",
   "engines": {
     "vscode": "^1.96.0"
   },
   "categories": [
-    "Other"
+    "Programming Languages",
+    "Machine Learning",
+    "AI",
+    "Chat"
   ],
   "activationEvents": [
   ],
@@ -17,8 +25,8 @@
       "activitybar": [
         {
           "id": "duck-chat",
-          "title": "Duck Chat",
-          "icon": "$(comment-discussion)"
+          "title": "duck.ai",
+          "icon": "media/icons/message.256.232.png"
         }
       ]
     },
@@ -26,19 +34,16 @@
       "duck-chat": [
         {
           "id": "duckChatView",
-          "name": "Chat",
+          "name": "",
           "type": "webview"
+
         }
       ]
     },
     "commands": [
       {
-        "command": "duck-vsx.startChat",
+        "command": "duck-vsix.startChat",
         "title": "Start Duck Chat"
-      },
-      {
-        "command": "duck-vsx.insertSnippet",
-        "title": "Insert Code Snippet"
       }
     ]
   },

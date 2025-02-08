@@ -16,3 +16,13 @@
   - Include part of selected text
   - Include contect of selected file
   - etc.
+
+## [1.0.0]
+
+- Official Repo link added to Extension package
+- Extension catagory added
+- activity bar icon changed
+- Readme edited
+- Extension icon added
+- New o3-mini model added
+- llama updated to 3.3 70B

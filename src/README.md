@@ -1,65 +1,85 @@
-# duck-vsx README
+# Duck AI - Chat privately
 
-This is the README for your extension "duck-vsx". After writing up a brief description, we recommend including the following sections.
+[Duck.ai](duck.ai) is a free and anonymous AI chat service launched by DuckDuckGo.
+
+Chat privately with ChatGPT, Claude, and other 3rd-party AI models for free with Duck.ai. **No account needed!**
+
+This Visual Studio Code extension that allows you to chat with Duck AI directly within the editor, providing a user-friendly interface to interact.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
-
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+- No-history tab.
+- Chat session vanish.
+- Simple and Clean UI.
+- `katex` for math expression rendered.
+- `marked` for real-time markdown rendering.
+- Code snippet insertion directly into your editor.
+- Uses simple GET POST API call to duck.ai endpoint.
+- Responsive `Code block`, `Block Quotes`, `Table` support and other markdown support.
+- Multi AI model includes `GPT 4o-mini`, `o3-mini`, `Claude-3 Haiku`, `Meta Llama`, `Mixtral`
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+- `vscode webview-ui-toolkit` 1.2.2 or higher
+- Active internet connection for DuckDuckGo API access
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+This extension currently has no settings.
 
-For example:
+Future updates may include:
 
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+> - `duckChat.defaultModel`: Choose the default AI model (default: 'gpt-4o-mini')
+>
+> - `duckChat.chatVanish`: Enable/disable chat persistance (default: true)
+>
+> - `duckChat.chatHistory`: Enable/disable chat history (default: false)
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+- Math rendering may occasionally fail for complex LaTeX expressions.
+- Token refresh might be required for long chat sessions.
+- Syntax highlighting for code responses not implemented as marked has removed highlight feature, trying to resolve this using `higlight.js`.
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
-
 ### 1.0.0
 
-Initial release of ...
+Initial release of Duck Chat VSCode Extension:
 
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+- Basic chat functionality
+- Markdown and LaTeX support
+- Code snippet insertion
+- Multiple model support
+- Improved markdown rendering
+- Added error handling for API requests
+- Added support for additional AI models
+- Improved chat UI responsiveness
+- Enhanced code snippet handling
 
 ---
 
-## Working with Markdown
+## Working with Duck Chat
 
-You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
+The extension can be accessed in two ways:
 
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets
+- Via the Duck Chat icon in the activity bar
+- Using the command palette (`Ctrl+Shift+P` or `Cmd+Shift+P`) and searching for "Start Duck Chat"
 
-## For more information
+For more information and updates, visit:
 
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
+- [Extension Repository](https://github.com/Sanjay0302/duck.vsix/)
+- [Issue Tracker](https://github.com/Sanjay0302/duck.vsix/issues)
 
-**Enjoy!**
+## Privacy Policy and Terms of Use
+
+By using this extension user should adhere to Privacy Policy and Terms of Use provided by [DuckDuckGo](https://duckduckgo.com/terms).
+
+[Privacy Policy and Terms of Use](https://duckduckgo.com/duckai/privacy-terms)
+
+## FAQ
+
+1. What is Chat session vanish.
+   The chat bubbles vanishes when the chat window is out of focus.
+
+**Enjoy chatting with Duck AI!**

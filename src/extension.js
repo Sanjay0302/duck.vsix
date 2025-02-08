@@ -9,7 +9,7 @@ const katex = require('katex');
 const mathTokenizer = {
     name: 'math',
     level: 'inline',
-    start(src) { 
+    start(src) {
         return src.match(/\$|\\\(|\\\[/)?.index;
     },
     tokenizer(src) {
@@ -301,7 +301,7 @@ function activate(context) {
         vscode.window.registerWebviewViewProvider('duckChatView', provider)
     );
 
-    let startChatCommand = vscode.commands.registerCommand('duck-vsx.startChat', () => {
+    let startChatCommand = vscode.commands.registerCommand('duck-vsix.startChat', () => {
         vscode.commands.executeCommand('workbench.view.extension.duck-chat');
     });
 
