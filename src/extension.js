@@ -3,6 +3,7 @@ const fetch = require('node-fetch');
 const path = require('path');
 const fs = require('fs');
 const { marked } = require('marked');
+const { JSDOM } = require('jsdom');
 const katex = require('katex');
 
 // Custom tokenizer for math expressions
@@ -148,7 +149,7 @@ class DuckChatViewProvider {
 
     async getVqdToken() {
         try {
-            const response = await fetch('https://duckduckgo.com/duckchat/v1/status', {
+            const response = await fetch('https://duck.ai/duckchat/v1/status', {
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
                     'Accept': '*/*',
@@ -156,15 +157,51 @@ class DuckChatViewProvider {
                 }
             });
 
-            const token = response.headers.get('x-vqd-4');
+            const token = response.headers.get('x-vqd-hash-1');
             if (!token) {
-                throw new Error('No VQD token in response');
+                throw new Error('No VQD token hash in response');
             }
-            return token;
+
+            return await this.getVqdTokenFromVqdHash(token);
         } catch (error) {
             console.error('Error getting token:', error);
             return null;
         }
+    }
+
+    async getVqdTokenFromVqdHash(vqdHashCode) {
+        const dom = new JSDOM(
+            `<iframe id="jsa" sandbox="allow-scripts allow-same-origin" srcdoc="<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Security-Policy"; content="default-src 'none'; script-src 'unsafe-inline'">
+</head>
+<body></body>
+</html>" style="position: absolute; left: -9999px; top: -9999px;"></iframe>`,
+            { runScripts: 'dangerously' }
+        );
+        dom.window.top.__DDG_BE_VERSION__ = 1;
+        dom.window.top.__DDG_FE_CHAT_HASH__ = 1;
+        /**
+         * @type {HTMLIFrameElement}
+         */
+        const jsa = dom.window.top.document.querySelector('#jsa');
+        const contentDoc = jsa.contentDocument || jsa.contentWindow.document;
+
+        const meta = contentDoc.createElement('meta');
+        meta.setAttribute('http-equiv', 'Content-Security-Policy');
+        meta.setAttribute('content', "default-src 'none'; script-src 'unsafe-inline';");
+        contentDoc.head.appendChild(meta);
+
+        /**
+         * @type {any}
+         */
+        const result = await dom.window.eval(atob(vqdHashCode))
+        result.client_hashes = await Promise.all(result.client_hashes.map((async hash => {
+            return btoa(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(hash)))
+                .reduce(((previous, current) => previous + String.fromCharCode(current)), ""))
+        })))
+        return btoa(JSON.stringify(result));
     }
 
     async sendChatMessage(text, model) {
@@ -189,16 +226,19 @@ class DuckChatViewProvider {
                 }
             }
 
-            const response = await fetch('https://duckduckgo.com/duckchat/v1/chat', {
+            const response = await fetch('https://duck.ai/duckchat/v1/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
                     'Accept': 'text/event-stream',
-                    'x-vqd-4': this.currentVqdToken
+                    'x-vqd-hash-1': this.currentVqdToken
                 },
                 body: JSON.stringify({
                     model: model || this.currentModel,
+                    // TODO: This is a really quick through-together that needs to be updated.
+                    ...((model || this.currentModel) == "gpt-5-mini" ? { reasoningEffort: "minimal" } :
+                        ((model || this.currentModel) == "openai/gpt-oss-120b" ? { reasoningEffort: "low" } : {})),
                     messages: this.messages
                 })
             });
@@ -213,10 +253,10 @@ class DuckChatViewProvider {
                 return '';
             }
 
-            const newVqdToken = response.headers.get('x-vqd-4');
+            const newVqdToken = response.headers.get('x-vqd-hash-1');
             if (newVqdToken) {
-                this.currentVqdToken = newVqdToken;
-                console.log('Updated VQD token:', newVqdToken);
+                this.currentVqdToken = await this.getVqdTokenFromVqdHash(newVqdToken);
+                console.log('Updated VQD token:', this.currentVqdToken);
             }
 
             let fullMessage = '';
