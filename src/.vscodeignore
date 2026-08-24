@@ -8,3 +8,12 @@ vsc-extension-quickstart.md
 **/*.map
 **/eslint.config.mjs
 **/.vscode-test.*
+
+# Ship the esbuild bundle, not the raw source or the full node_modules tree.
+# isolated-vm is a native addon (.node binaries) that can't be bundled, so it
+# ships as-is. Note: use node_modules/* (single-level) not node_modules/**
+# here — the ** form prevents re-including isolated-vm with the ! rule below.
+/extension.js
+/build.js
+node_modules/*
+!node_modules/isolated-vm
