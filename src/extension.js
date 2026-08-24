@@ -2,9 +2,73 @@ const vscode = require('vscode');
 const fetch = require('node-fetch');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
+const ivm = require('isolated-vm');
 const { marked } = require('marked');
-const { JSDOM } = require('jsdom');
 const katex = require('katex');
+
+// DuckDuckGo's VQD anti-bot handshake requires executing a short script the
+// server returns. We run it in an isolated-vm sandbox — a separate V8 isolate
+// with no access to Node internals — rather than directly in the extension
+// process. Only the handful of globals the script actually needs are bridged in.
+const VQD_EVAL_TIMEOUT_MS = 3000;
+const VQD_ISOLATE_MEMORY_MB = 32;
+const VQD_MAX_SOURCE_LENGTH = 20000;
+
+async function runVqdChallengeSandboxed(challengeSource, ddgGlobals = {}) {
+    if (typeof challengeSource !== 'string' || challengeSource.length === 0
+        || challengeSource.length > VQD_MAX_SOURCE_LENGTH) {
+        throw new Error('VQD challenge script failed basic validation');
+    }
+
+    const isolate = new ivm.Isolate({ memoryLimit: VQD_ISOLATE_MEMORY_MB });
+    try {
+        const context = await isolate.createContext();
+        const jail = context.global;
+        await jail.set('global', jail.derefInto());
+
+        // One-way bridge: the isolate can request a SHA-256 digest but never
+        // gets a reference to Node's crypto module itself.
+        const digestRef = new ivm.Reference(async (algoName, byteArray) => {
+            const nodeAlgo = String(algoName).replace('-', '').toLowerCase();
+            const hash = crypto.createHash(nodeAlgo);
+            hash.update(Buffer.from(byteArray));
+            return new ivm.ExternalCopy(Array.from(hash.digest())).copyInto();
+        });
+
+        await context.evalClosure(
+            `
+            global.__DDG_BE_VERSION__ = $0;
+            global.__DDG_FE_CHAT_HASH__ = $1;
+            global.atob = (b64) => Buffer.from(b64, 'base64').toString('binary');
+            global.btoa = (str) => Buffer.from(str, 'binary').toString('base64');
+            global.TextEncoder = class {
+                encode(str) {
+                    return Uint8Array.from(Buffer.from(str, 'utf-8'));
+                }
+            };
+            global.crypto = {
+                subtle: {
+                    digest: (algo, data) => {
+                        const bytes = Array.from(new Uint8Array(data));
+                        return $2.apply(undefined, [algo, bytes], { result: { promise: true, copy: true } })
+                            .then((arr) => new Uint8Array(arr).buffer);
+                    }
+                }
+            };
+            `,
+            [ddgGlobals.beVersion ?? 1, ddgGlobals.feChatHash ?? 1, digestRef],
+            { arguments: { copy: true } }
+        );
+
+        const wrapped = `(async () => { ${challengeSource}\n; return result; })()`;
+        const script = await isolate.compileScript(wrapped);
+        const result = await script.run(context, { timeout: VQD_EVAL_TIMEOUT_MS, promise: true, copy: true });
+        return result;
+    } finally {
+        isolate.dispose();
+    }
+}
 
 // Custom tokenizer for math expressions
 const mathTokenizer = {
@@ -104,10 +168,22 @@ class DuckChatViewProvider {
         const cssUri = webviewView.webview.asWebviewUri(
             vscode.Uri.file(path.join(this.context.extensionPath, 'media', 'chat.css'))
         );
+        const dompurifyUri = webviewView.webview.asWebviewUri(
+            vscode.Uri.file(path.join(this.context.extensionPath, 'media', 'vendor', 'purify.min.js'))
+        );
+
+        // Fresh nonce per load — chat.html's CSP uses it to allow only this
+        // session's inline scripts, nothing else.
+        const nonce = crypto.randomBytes(16).toString('base64');
+        const cspSource = webviewView.webview.cspSource;
 
         const htmlPath = path.join(this.context.extensionPath, 'media', 'chat.html');
         let htmlContent = fs.readFileSync(htmlPath, 'utf8');
-        htmlContent = htmlContent.replace('${cssUri}', cssUri);
+        htmlContent = htmlContent
+            .replace(/\$\{cssUri\}/g, cssUri)
+            .replace(/\$\{dompurifyUri\}/g, dompurifyUri)
+            .replace(/\$\{nonce\}/g, nonce)
+            .replace(/\$\{cspSource\}/g, cspSource);
 
         webviewView.webview.html = htmlContent;
 
@@ -170,38 +246,15 @@ class DuckChatViewProvider {
     }
 
     async getVqdTokenFromVqdHash(vqdHashCode) {
-        const dom = new JSDOM(
-            `<iframe id="jsa" sandbox="allow-scripts allow-same-origin" srcdoc="<!DOCTYPE html>
-<html>
-<head>
-<meta http-equiv="Content-Security-Policy"; content="default-src 'none'; script-src 'unsafe-inline'">
-</head>
-<body></body>
-</html>" style="position: absolute; left: -9999px; top: -9999px;"></iframe>`,
-            { runScripts: 'dangerously' }
-        );
-        dom.window.top.__DDG_BE_VERSION__ = 1;
-        dom.window.top.__DDG_FE_CHAT_HASH__ = 1;
-        /**
-         * @type {HTMLIFrameElement}
-         */
-        const jsa = dom.window.top.document.querySelector('#jsa');
-        const contentDoc = jsa.contentDocument || jsa.contentWindow.document;
+        const challengeSource = Buffer.from(vqdHashCode, 'base64').toString('binary');
+        const result = await runVqdChallengeSandboxed(challengeSource);
 
-        const meta = contentDoc.createElement('meta');
-        meta.setAttribute('http-equiv', 'Content-Security-Policy');
-        meta.setAttribute('content', "default-src 'none'; script-src 'unsafe-inline';");
-        contentDoc.head.appendChild(meta);
-
-        /**
-         * @type {any}
-         */
-        const result = await dom.window.eval(atob(vqdHashCode))
-        result.client_hashes = await Promise.all(result.client_hashes.map((async hash => {
-            return btoa(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(hash)))
-                .reduce(((previous, current) => previous + String.fromCharCode(current)), ""))
-        })))
-        return btoa(JSON.stringify(result));
+        result.client_hashes = await Promise.all(result.client_hashes.map(async hash => {
+            return Buffer.from(
+                new Uint8Array(await crypto.webcrypto.subtle.digest("SHA-256", new TextEncoder().encode(hash)))
+            ).toString('base64');
+        }));
+        return Buffer.from(JSON.stringify(result)).toString('base64');
     }
 
     async sendChatMessage(text, model) {
@@ -334,6 +387,23 @@ class DuckChatViewProvider {
 
 function activate(context) {
     console.log('Duck Chat extension is now active!');
+
+    // One-time notice: this extension talks to an undocumented duck.ai backend
+    // and chat content (including pasted code) leaves the editor.
+    const PRIVACY_NOTICE_KEY = 'duckai.privacyNoticeShown';
+    if (!context.globalState.get(PRIVACY_NOTICE_KEY)) {
+        vscode.window.showInformationMessage(
+            'duck.ai sends your chat messages (including any pasted code) to DuckDuckGo\'s ' +
+            'undocumented duck.ai backend and the model provider you select. Avoid pasting ' +
+            'proprietary or secret-bearing code.',
+            'View README', 'Got it'
+        ).then(choice => {
+            if (choice === 'View README') {
+                vscode.env.openExternal(vscode.Uri.parse('https://github.com/Sanjay0302/duck.vsix/#privacy--data-flow'));
+            }
+        });
+        context.globalState.update(PRIVACY_NOTICE_KEY, true);
+    }
 
     const provider = new DuckChatViewProvider(context);
 
