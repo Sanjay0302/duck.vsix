@@ -20,8 +20,23 @@ This Visual Studio Code extension that allows you to chat with Duck AI directly 
 
 ## Requirements
 
-- `vscode webview-ui-toolkit` 1.2.2 or higher
 - Active internet connection for DuckDuckGo API access
+
+## Privacy & Data Flow
+
+This extension is **not** an official DuckDuckGo product and does not use any documented, stable API. It works by replicating the request flow of DuckDuckGo's own web client against `duck.ai`'s undocumented backend. That means:
+
+- DuckDuckGo can change that backend at any time without notice, which would break this extension until it's updated.
+- Everything you type into the chat panel — including any code you paste — leaves your editor and is sent to DuckDuckGo's servers, and from there to whichever model you've selected (OpenAI, Anthropic, Meta, or Mistral), under duck.ai's own privacy terms.
+- **Avoid pasting proprietary, confidential, or secret-bearing code** into the chat panel.
+
+## Security
+
+A few implementation details worth knowing if you're reviewing or contributing:
+
+- The DuckDuckGo anti-bot "VQD" token handshake requires executing a short script returned by DuckDuckGo's server. That runs inside an [`isolated-vm`](https://github.com/laverdet/isolated-vm) sandbox — a separate V8 isolate with no access to Node internals — rather than directly in the extension process.
+- The chat webview sanitizes all rendered Markdown/HTML through [DOMPurify](https://github.com/cure53/DOMPurify) before writing to `innerHTML`, and is scoped by a per-load Content-Security-Policy (nonce-based, `connect-src 'none'`).
+- Runtime dependencies are kept at zero known vulnerabilities — run `npm run audit` to check.
 
 ## Extension Settings
 
@@ -76,6 +91,8 @@ For more information and updates, visit:
 By using this extension user should adhere to Privacy Policy and Terms of Use provided by [DuckDuckGo](https://duckduckgo.com/terms).
 
 [Privacy Policy and Terms of Use](https://duckduckgo.com/duckai/privacy-terms)
+
+See [Privacy & Data Flow](#privacy--data-flow) above for what that means in practice for this extension.
 
 ## FAQ
 

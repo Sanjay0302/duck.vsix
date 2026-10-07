@@ -4,9 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'none';
+        script-src 'nonce-${nonce}' ${cspSource} https://cdn.jsdelivr.net;
+        style-src 'nonce-${nonce}' ${cspSource} https://cdn.jsdelivr.net;
+        font-src ${cspSource} https://cdn.jsdelivr.net;
+        img-src ${cspSource} data:;
+        connect-src 'none';
+    ">
     <link rel="stylesheet" href="${cssUri}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-    <style>
+    <style nonce="${nonce}">
         /* Add some basic styling for math display */
         .katex-display {
             margin: 1em 0;
@@ -25,9 +33,11 @@
             overflow-y: hidden;
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-    <script>
+    <script nonce="${nonce}" src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script nonce="${nonce}" src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <!-- DOMPurify vendored locally so we don't need another CDN origin in the CSP -->
+    <script nonce="${nonce}" src="${dompurifyUri}"></script>
+    <script nonce="${nonce}">
         document.addEventListener("DOMContentLoaded", function () {
             renderMathInElement(document.body, {
                 // customised options
@@ -69,8 +79,12 @@
             </div>
         </div>
     </div>
-    <script>
+    <script nonce="${nonce}">
         const vscode = acquireVsCodeApi();
+
+        function renderSafeHtml(html) {
+            return DOMPurify.sanitize(html);
+        }
         const messagesDiv = document.getElementById('messages');
         const messageInput = document.getElementById('message-input');
         const sendButton = document.getElementById('send-button');
@@ -144,8 +158,7 @@
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
 
-            // First set the content
-            contentDiv.innerHTML = content;
+            contentDiv.innerHTML = renderSafeHtml(content);
 
             // Then replace code blocks with our custom ones
             contentDiv.querySelectorAll('pre code').forEach((block) => {
@@ -200,7 +213,7 @@
                 case 'receiveMessage':
                     if (message.isIncremental && currentMessageDiv) {
                         const contentDiv = currentMessageDiv.querySelector('.message-content');
-                        contentDiv.innerHTML = message.text;
+                        contentDiv.innerHTML = renderSafeHtml(message.text);
                         // Re-process code blocks after updating content
                         contentDiv.querySelectorAll('pre code').forEach((block) => {
                             const code = block.textContent;
